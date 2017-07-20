@@ -4,18 +4,7 @@ import com.github.kongchen.swagger.docgen.jaxrs.BeanParamInjectParamExtention;
 import com.github.kongchen.swagger.docgen.jaxrs.JaxrsParameterExtension;
 import com.github.kongchen.swagger.docgen.spring.SpringSwaggerExtension;
 import com.sun.jersey.api.core.InjectParam;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
-import io.swagger.annotations.AuthorizationScope;
-import io.swagger.annotations.Extension;
-import io.swagger.annotations.ExtensionProperty;
-import io.swagger.annotations.ResponseHeader;
+import io.swagger.annotations.*;
 import io.swagger.converter.ModelConverters;
 import io.swagger.jaxrs.ext.SwaggerExtension;
 import io.swagger.jaxrs.ext.SwaggerExtensions;
@@ -415,10 +404,11 @@ public abstract class AbstractReader {
     protected void updateApiResponse(Operation operation, ApiResponses responseAnnotation) {
         for (ApiResponse apiResponse : responseAnnotation.value()) {
             Map<String, Property> responseHeaders = parseResponseHeaders(apiResponse.responseHeaders());
+            Map<String, Object> examples = parseExamples(apiResponse.examples());
             Class<?> responseClass = apiResponse.response();
             Response response = new Response()
                     .description(apiResponse.message())
-                    .headers(responseHeaders);
+                    .headers(responseHeaders).setExamples(examples);
 
             if (responseClass.equals(Void.class)) {
                 if (operation.getResponses() != null) {
@@ -531,6 +521,24 @@ public abstract class AbstractReader {
             SwaggerExtension extension = chain.next();
             extension.decorateOperation(operation, method, chain);
         }
+    }
+
+    protected Map<String, Object> parseExamples(Example examples) {
+        if(examples == null){
+            return null;
+        }
+
+        Map<String, Object> map = null;
+        for(ExampleProperty prop : examples.value()){
+
+            if(prop.mediaType().equals("") && prop.value().equals("")){
+                continue;
+            }
+
+            map = map == null ? new HashMap<String, Object>() : map;
+            map.put(prop.mediaType(), prop.value());
+        }
+        return map;
     }
 
 }
